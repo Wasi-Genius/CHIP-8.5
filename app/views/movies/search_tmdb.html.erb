@@ -1,5 +1,9 @@
 <h2>Search TMDb for a movie</h2>
 
+<% if @tmdb_diagnostics.present? %>
+  <div id="tmdb_diagnostics" data-diagnostics="<%= @tmdb_diagnostics.to_json %>" hidden></div>
+<% end %>
+
 <%= form_tag search_tmdb_path, method: :get, id: 'tmdb_form' do %>
   <div class="mb-3">
     <label for="movie_title_field" class="form-label">Movie Name</label>

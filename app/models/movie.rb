@@ -13,7 +13,7 @@ class Movie < ApplicationRecord
     end
   end
 
-  def self.find_in_tmdb(search_params, api_key = ENV['TMDB_API_KEY'])
+  def self.find_in_tmdb(search_params, api_key = ENV['TMDB_API_KEY'], diagnostics: nil)
     # Allow backward compatibility if a raw URL string is passed in early specs
     if search_params.is_a?(String)
       return Faraday.get(search_params)
@@ -36,6 +36,11 @@ class Movie < ApplicationRecord
     begin
       response = Faraday.get(base_url, query_params)
     rescue Faraday::Error => error
+      diagnostics&.merge!(
+        status: 'error',
+        error_type: error.class.name,
+        message: 'TMDb connection failed'
+      )
       Rails.logger.error("TMDb connection failed (#{error.class})")
       raise TmdbApiError, "TMDb connection failed (#{error.class})"
     end
@@ -43,11 +48,21 @@ class Movie < ApplicationRecord
     begin
       parsed = JSON.parse(response.body)
     rescue JSON::ParserError
+      diagnostics&.merge!(
+        status: 'error',
+        http_status: response.status,
+        message: 'TMDb returned invalid JSON'
+      )
       Rails.logger.error("TMDb returned invalid JSON (HTTP #{response.status})")
       raise TmdbApiError, "TMDb returned invalid JSON (HTTP #{response.status})"
     end
 
     unless parsed.is_a?(Hash)
+      diagnostics&.merge!(
+        status: 'error',
+        http_status: response.status,
+        message: 'TMDb returned an unexpected response'
+      )
       Rails.logger.error("TMDb returned an unexpected response shape (HTTP #{response.status})")
       raise TmdbApiError, "TMDb returned an unexpected response (HTTP #{response.status})"
     end
@@ -55,6 +70,12 @@ class Movie < ApplicationRecord
     unless response.success?
       api_code = parsed['status_code']
       api_message = parsed['status_message'].to_s.gsub(/[\r\n]/, ' ')[0, 200]
+      diagnostics&.merge!(
+        status: 'error',
+        http_status: response.status,
+        api_code: api_code,
+        message: api_message
+      )
       Rails.logger.error(
         "TMDb API error (http_status=#{response.status}, " \
         "api_code=#{api_code.inspect}, message=#{api_message.inspect})"
@@ -64,10 +85,20 @@ class Movie < ApplicationRecord
 
     results = parsed['results']
     unless results.is_a?(Array)
+      diagnostics&.merge!(
+        status: 'error',
+        http_status: response.status,
+        message: 'TMDb response did not contain a results array'
+      )
       Rails.logger.error("TMDb response did not contain a results array (HTTP #{response.status})")
       raise TmdbApiError, "TMDb returned an unexpected response (HTTP #{response.status})"
     end
 
+    diagnostics&.merge!(
+      status: 'success',
+      http_status: response.status,
+      result_count: results.length
+    )
     Rails.logger.info(
       "TMDb search response (http_status=#{response.status}, result_count=#{results.length})"
     )

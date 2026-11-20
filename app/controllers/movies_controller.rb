@@ -50,6 +50,10 @@ class MoviesController < ApplicationController
        params.key?(:release_year) || params.key?(:language)
       title = params[:title] || params[:search_terms]
       if title.blank?
+        @tmdb_diagnostics = {
+          status: 'validation_error',
+          message: 'Please fill in all required fields!'
+        }
         flash.now[:warning] = 'Please fill in all required fields!'
         @movies = []
       else
@@ -62,7 +66,13 @@ class MoviesController < ApplicationController
                             language: params[:language]
                           }
                         end
-        @movies = Movie.find_in_tmdb(search_params)
+        if search_params.is_a?(String)
+          @movies = Movie.find_in_tmdb(search_params)
+          @tmdb_diagnostics = { status: 'legacy_search', result_count: @movies.length }
+        else
+          @tmdb_diagnostics = { api_key_configured: ENV['TMDB_API_KEY'].present? }
+          @movies = Movie.find_in_tmdb(search_params, diagnostics: @tmdb_diagnostics)
+        end
         if @movies.blank?
           flash.now[:warning] = 'No movies found with given parameters!'
         end
@@ -70,6 +80,9 @@ class MoviesController < ApplicationController
     end
   rescue Movie::TmdbApiError => error
     Rails.logger.warn("TMDb search failed: #{error.message}")
+    @tmdb_diagnostics ||= {}
+    @tmdb_diagnostics[:status] = 'error'
+    @tmdb_diagnostics[:message] ||= error.message
     @movies = []
     flash.now[:warning] = 'TMDb search failed. Check the application logs for details.'
   end

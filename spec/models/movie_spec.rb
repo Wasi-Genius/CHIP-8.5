@@ -10,6 +10,7 @@ describe Movie do
     end
 
     it 'raises an API error when TMDb rejects the request' do
+      diagnostics = {}
       response = double(
         'response',
         body: '{"status_code":7,"status_message":"Invalid API key"}',
@@ -19,16 +20,22 @@ describe Movie do
       expect(Faraday).to receive(:get).and_return(response)
 
       expect do
-        Movie.find_in_tmdb({ title: 'hacker', language: 'en' })
+        Movie.find_in_tmdb({ title: 'hacker', language: 'en' }, diagnostics: diagnostics)
       end.to raise_error(Movie::TmdbApiError, /HTTP 401/)
+      expect(diagnostics).to include(status: 'error', http_status: 401, api_code: 7)
     end
 
     it 'calls TMDb with valid API key and returns unsaved Movie objects' do
-      results = Movie.find_in_tmdb({ title: 'Olympics', release_year: '2000', language: 'en' })
+      diagnostics = {}
+      results = Movie.find_in_tmdb(
+        { title: 'Olympics', release_year: '2000', language: 'en' },
+        diagnostics: diagnostics
+      )
       expect(results.length).to eq(2)
       expect(results.first).to be_a(Movie)
       expect(results.first.new_record?).to be true
       expect(results.first.rating).to eq('R')
+      expect(diagnostics).to include(status: 'success', http_status: 200, result_count: 2)
     end
   end
 end
