@@ -42,6 +42,13 @@ describe MoviesController, type: :controller do
       get :search_tmdb, params: { title: 'No matching movie' }
       expect(flash[:warning]).to eq('No movies found with given parameters!')
     end
+
+    it 'shows an API failure warning when TMDb rejects the request' do
+      allow(Movie).to receive(:find_in_tmdb).
+        and_raise(Movie::TmdbApiError, 'TMDb returned HTTP 401')
+      get :search_tmdb, params: { title: 'Hacker' }
+      expect(flash[:warning]).to eq('TMDb search failed. Check the application logs for details.')
+    end
   end
 
   describe 'adding a movie from TMDb' do

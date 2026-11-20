@@ -68,6 +68,10 @@ class MoviesController < ApplicationController
         end
       end
     end
+  rescue Movie::TmdbApiError => error
+    Rails.logger.warn("TMDb search failed: #{error.message}")
+    @movies = []
+    flash.now[:warning] = 'TMDb search failed. Check the application logs for details.'
   end
 
   def add_movie
