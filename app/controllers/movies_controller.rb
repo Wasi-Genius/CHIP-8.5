@@ -71,7 +71,7 @@ class MoviesController < ApplicationController
     if params.key?(:title) || params.key?(:search_terms)
       title = params[:title] || params[:search_terms]
       if title.blank?
-        flash.now[:warning] = 'Please fill in all required fields!'
+        flash.now[:danger] = 'Please fill in all required fields!'
         @movies = []
       else
         search_params = {
@@ -81,7 +81,7 @@ class MoviesController < ApplicationController
         }
         @movies = Movie.find_in_tmdb(search_params)
         if @movies.blank?
-          flash.now[:info] = 'No movies found with given parameters!'
+          flash.now[:danger] = 'No movies found with given parameters!'
         end
       end
     end

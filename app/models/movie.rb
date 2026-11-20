@@ -23,7 +23,7 @@ class Movie < ApplicationRecord
       query: search_params[:title]
     }
     query_params[:year] = search_params[:release_year] if search_params[:release_year].present?
-    query_params[:language] = search_params[:language] if search_params[:language].present?
+    query_params[:language] = 'en-US' if search_params[:language] == 'en'
 
     response = Faraday.get(base_url, query_params)
     parsed = JSON.parse(response.body)
