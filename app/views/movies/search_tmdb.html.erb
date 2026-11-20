@@ -1,13 +1,5 @@
 <h2>Search TMDb for a movie</h2>
 
-<% flash.each do |key, value| %>
-  <% alert_class = key.to_s == 'notice' ? 'success' : key %>
-  <div class="alert alert-<%= alert_class %> alert-dismissible fade show" role="alert">
-    <%= value %>
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-  </div>
-<% end %>
-
 <%= form_tag search_tmdb_path, method: :get, id: 'tmdb_form' do %>
   <div class="mb-3">
     <label for="movie_title_field" class="form-label">Movie Name</label>

@@ -45,6 +45,40 @@ class MoviesController < ApplicationController
     redirect_to movies_path
   end
 
+  def search_tmdb
+    if params.key?(:title) || params.key?(:search_terms) ||
+       params.key?(:release_year) || params.key?(:language)
+      title = params[:title] || params[:search_terms]
+      if title.blank?
+        flash.now[:warning] = 'Please fill in all required fields!'
+        @movies = []
+      else
+        search_params = if params.key?(:search_terms) && !params.key?(:title)
+                          title
+                        else
+                          {
+                            title: title,
+                            release_year: params[:release_year],
+                            language: params[:language]
+                          }
+                        end
+        @movies = Movie.find_in_tmdb(search_params)
+        if @movies.blank?
+          flash.now[:warning] = 'No movies found with given parameters!'
+        end
+      end
+    end
+  end
+
+  def add_movie
+    movie_params = params.permit(:title, :release_date, :rating)
+    movie_params = movie_params.slice(:title, :release_date, :rating)
+
+    @movie = Movie.create!(movie_params)
+    flash[:notice] = "#{@movie.title} was successfully added to RottenPotatoes."
+    redirect_to search_tmdb_path
+  end
+
   private
 
   def force_index_redirect
@@ -65,34 +99,5 @@ class MoviesController < ApplicationController
 
   def sort_by
     params[:sort_by] || session[:sort_by] || 'id'
-  end
-
-  def search_tmdb
-    if params.key?(:title) || params.key?(:search_terms)
-      title = params[:title] || params[:search_terms]
-      if title.blank?
-        flash.now[:danger] = 'Please fill in all required fields!'
-        @movies = []
-      else
-        search_params = {
-          title: title,
-          release_year: params[:release_year],
-          language: params[:language]
-        }
-        @movies = Movie.find_in_tmdb(search_params)
-        if @movies.blank?
-          flash.now[:danger] = 'No movies found with given parameters!'
-        end
-      end
-    end
-  end
-
-  def add_movie
-    movie_params = params.permit(:title, :release_date, :rating)
-    movie_params = movie_params.slice(:title, :release_date, :rating)
-    
-    @movie = Movie.create!(movie_params)
-    flash[:notice] = "#{@movie.title} was successfully added to RottenPotatoes."
-    redirect_to search_tmdb_path
   end
 end

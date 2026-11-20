@@ -31,6 +31,17 @@ describe MoviesController, type: :controller do
       get :search_tmdb, params: { title: '' }
       expect(flash[:warning]).to eq('Please fill in all required fields!')
     end
+
+    it 'flashes a warning if the title is omitted from a search' do
+      get :search_tmdb, params: { release_year: '2000' }
+      expect(flash[:warning]).to eq('Please fill in all required fields!')
+    end
+
+    it 'flashes a warning when the search returns no movies' do
+      allow(Movie).to receive(:find_in_tmdb).and_return([])
+      get :search_tmdb, params: { title: 'No matching movie' }
+      expect(flash[:warning]).to eq('No movies found with given parameters!')
+    end
   end
 
   describe 'adding a movie from TMDb' do
