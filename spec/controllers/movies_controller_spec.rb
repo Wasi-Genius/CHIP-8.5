@@ -26,5 +26,22 @@ describe MoviesController, type: :controller do
         expect(assigns(:movies)).to eq(@fake_results)
       end
     end
+
+    it 'flashes a warning if title is missing' do
+      get :search_tmdb, params: { title: '' }
+      expect(flash[:warning]).to eq('Please fill in all required fields!')
+    end
   end
+
+  describe 'adding a movie from TMDb' do
+    it 'creates a new movie and redirects to search page' do
+      expect {
+        post :add_movie, params: { title: 'Manhunter', release_date: '1986-08-15', rating: 'R' }
+      }.to change(Movie, :count).by(1)
+      expect(flash[:notice]).to eq('Manhunter was successfully added to RottenPotatoes.')
+      expect(response).to redirect_to(search_tmdb_path)
+    end
+  end
+
+
 end

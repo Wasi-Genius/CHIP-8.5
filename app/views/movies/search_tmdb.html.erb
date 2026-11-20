@@ -1,30 +1,71 @@
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+<h2>Search TMDb for a movie</h2>
 
-
-<h2>Search in TMDb</h2>
-<%# Part 5 here %>
-
-<div class="search-container">
-<%# Part 1 here %>
-<%= form_tag search_tmdb_path, method: :get, id: 'tmdb_form' do %>
-    <label for="searchMovieName">Movie Name</label>
-    <%= text_field_tag 'title', nil, class: "form-control", id: "movie_title_field", placeholder: "Manhunter", id: "movie_title_field"%> 
-    <label for="searchReleaseDateField">Release Year</label>
-    <%= text_field_tag 'release_year', nil, class: "form-control", id: "movie_year_field", placeholder: "1986", id: "movie_year_field"%>
-  
-  <div class="form-check">
-    <%= radio_button_tag 'language', 'en', false, class: "form-check-input" %>
-    <label class="form-check-label" for="language_en">English Only</label>
+<% flash.each do |key, value| %>
+  <% alert_class = key.to_s == 'notice' ? 'success' : key %>
+  <div class="alert alert-<%= alert_class %> alert-dismissible fade show" role="alert">
+    <%= value %>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
   </div>
-
-  <div class="form-check">
-    <%= radio_button_tag 'language', 'all', true, class: "form-check-input" %>
-    <label class="form-check-label" for="language_all">All Languages</label>
-  </div>
-  <%= submit_tag 'Search', id: 'tmdb_submit', class: 'btn btn-warning col-2' %>
-  
 <% end %>
 
+<%= form_tag search_tmdb_path, method: :get, id: 'tmdb_form' do %>
+  <div class="mb-3">
+    <label for="movie_title_field" class="form-label">Movie Name</label>
+    <%= text_field_tag 'title', params[:title], class: 'form-control', id: 'movie_title_field', placeholder: 'Manhunter' %>
+  </div>
+
+  <div class="mb-3">
+    <label for="movie_year_field" class="form-label">Release Year (Optional)</label>
+    <%= text_field_tag 'release_year', params[:release_year], class: 'form-control', id: 'movie_year_field', placeholder: '1986' %>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Language</label><br>
+    <%= radio_button_tag 'language', 'en', params[:language] == 'en', id: 'language_en' %>
+    <label for="language_en">English Only</label>
+    <%= radio_button_tag 'language', 'all', params[:language] != 'en', id: 'language_all' %>
+    <label for="language_all">All Languages</label>
+  </div>
+
+  <%= submit_tag 'Search', id: 'tmdb_submit', class: 'btn btn-primary' %>
+<% end %>
+
+<br>
 <%= link_to 'Back to movie list', movies_path, class: 'btn btn-secondary' %>
-</div>
+
+<% if @movies.present? %>
+  <hr>
+  <h3>Search Results</h3>
+  <table class="table table-striped col-md-12" id="search_movies">
+    <thead>
+      <tr>
+        <th>Movie Title</th>
+        <th>Rating</th>
+        <th>Release Date</th>
+        <th>Synopsis</th>
+        <th>Add Movie</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @movies.each do |movie| %>
+        <tr>
+          <td><%= movie.title %></td>
+          <td><%= movie.rating %></td>
+          <td><%= movie.release_date %></td>
+          <td><%= movie.respond_to?(:overview) ? movie.overview : '' %></td>
+          <td>
+            <%= form_tag add_movie_path, method: :post do %>
+              <%= hidden_field_tag :title, movie.title %>
+              <%= hidden_field_tag :release_date, movie.release_date %>
+              <%= hidden_field_tag :rating, movie.rating %>
+              <% if movie.respond_to?(:overview) %>
+                <%= hidden_field_tag :overview, movie.overview %>
+              <% end %>
+              <%= submit_tag 'Add movie', class: 'btn btn-success btn-sm' %>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% end %>
